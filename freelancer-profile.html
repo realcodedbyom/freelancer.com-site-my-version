@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freelancer Profile - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-freelancers.html">Browse Freelancers</a></li>
+                <li><a href="post-job.html">Post a Job</a></li>
+                <li><a href="login.html" class="btn-login-nav">Login</a></li>
+                <li><a href="signup.html" class="btn-signup-nav">Sign Up</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="section profile-section">
+            <div id="profileContainer">
+                <!-- Loaded dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        async function loadProfile() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const freelancerId = params.get('id');
+
+                if (!freelancerId) {
+                    document.getElementById('profileContainer').innerHTML = '<p>Freelancer not found</p>';
+                    return;
+                }
+
+                const response = await fetch(`/api/freelancers/${freelancerId}`);
+                const data = await response.json();
+
+                if (!data.success || !data.freelancer) {
+                    document.getElementById('profileContainer').innerHTML = '<p>Freelancer not found</p>';
+                    return;
+                }
+
+                const f = data.freelancer;
+                const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+                const canRate = currentUser && currentUser.userType === 'client';
+                const freelancer = {
+                    id: f._id,
+                    name: f.name,
+                    title: f.freelancerProfile?.title || 'Freelancer',
+                    bio: f.freelancerProfile?.bio || 'No bio available',
+                    skills: f.freelancerProfile?.skills || [],
+                    hourlyRate: f.freelancerProfile?.hourlyRate || 0,
+                    rating: f.freelancerProfile?.rating || 0,
+                    reviews: f.freelancerProfile?.reviewCount || 0,
+                    isAvailable: f.freelancerProfile?.isAvailable !== false
+                };
+
+                const container = document.getElementById('profileContainer');
+                container.innerHTML = `
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <h1>${freelancer.name}</h1>
+                            <div class="profile-rating">⭐ ${freelancer.rating} (${freelancer.reviews} reviews)</div>
+                        </div>
+                        <p class="profile-title">${freelancer.title}</p>
+                        <p class="profile-bio">${freelancer.bio}</p>
+                        
+                        <div class="profile-details">
+                            <div class="detail-box">
+                                <h3>Hourly Rate</h3>
+                                <p>$${freelancer.hourlyRate}/hr</p>
+                            </div>
+                            <div class="detail-box">
+                                <h3>Status</h3>
+                                <p>${freelancer.isAvailable ? 'Available' : 'Not Available'}</p>
+                            </div>
+                        </div>
+
+                        <div class="profile-skills">
+                            <h3>Skills</h3>
+                            <div class="skills-list">
+                                ${freelancer.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="profile-actions">
+                            <button class="btn-primary" onclick="hireFreelancer('${freelancer.id}')">Hire Now</button>
+                            <button class="btn-secondary" onclick="startConversation('${freelancer.id}')">💬 Message</button>
+                            <a href="browse-freelancers.html" class="btn-secondary">Back to Browse</a>
+                        </div>
+                        
+                        ${canRate ? `
+                        <div class="profile-rating-form">
+                            <h3>Rate this freelancer</h3>
+                            <div class="rating-input-row">
+                                <label for="ratingValue">Your rating</label>
+                                <select id="ratingValue">
+                                    <option value="5">5 - Excellent</option>
+                                    <option value="4">4 - Good</option>
+                                    <option value="3">3 - Okay</option>
+                                    <option value="2">2 - Poor</option>
+                                    <option value="1">1 - Bad</option>
+                                </select>
+                            </div>
+                            <div class="rating-input-row">
+                                <label for="ratingReview">Feedback (optional)</label>
+                                <textarea id="ratingReview" rows="3" placeholder="Share your experience working with this freelancer"></textarea>
+                            </div>
+                            <button class="btn-primary" onclick="submitRating('${freelancer.id}')">Submit Rating</button>
+                        </div>
+                        ` : ''}
+
+                        <div class="profile-report">
+                            <button class="btn-secondary btn-danger" onclick="reportFreelancer('${freelancer.id}', '${freelancer.name}')">Report this profile</button>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('[v0] Error loading profile:', error);
+            }
+        }
+
+        async function submitRating(freelancerId) {
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || 'null');
+                if (!user || user.userType !== 'client') {
+                    alert('Please login as a client to rate.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const ratingValue = parseInt(document.getElementById('ratingValue').value, 10);
+                const review = document.getElementById('ratingReview').value.trim();
+
+                const res = await fetch(`/api/freelancers/${freelancerId}/rate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        clientId: user._id,
+                        rating: ratingValue,
+                        review
+                    })
+                });
+
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.error || 'Failed to submit rating');
+                    return;
+                }
+
+                alert('Rating submitted. Thank you!');
+                await loadProfile();
+            } catch (err) {
+                console.error('Error submitting rating:', err);
+                alert('Failed to submit rating');
+            }
+        }
+
+        async function reportFreelancer(freelancerId, freelancerName) {
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || 'null');
+                if (!user) {
+                    alert('Please login to report.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const reason = prompt(`Why are you reporting ${freelancerName}? (required)`);
+                if (!reason || !reason.trim()) return;
+                const details = prompt('Any additional details? (optional)') || '';
+
+                const res = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reporterId: user._id,
+                        type: 'user',
+                        targetUserId: freelancerId,
+                        reason: reason.trim(),
+                        details
+                    })
+                });
+
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.error || 'Failed to submit report');
+                    return;
+                }
+
+                alert('Report submitted to admins. Thank you for helping keep the platform safe.');
+            } catch (err) {
+                console.error('Error reporting freelancer:', err);
+                alert('Failed to submit report');
+            }
+        }
+
+        async function hireFreelancer(freelancerId) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('Please login first');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (user.userType !== 'client') {
+                alert('Only clients can hire freelancers');
+                return;
+            }
+
+            // Get client's open jobs
+            const response = await fetch('/api/jobs');
+            const data = await response.json();
+            
+            if (!data.success) {
+                alert('Error loading your jobs');
+                return;
+            }
+
+            const clientJobs = data.jobs.filter(j => 
+                j.clientId.toString() === user._id.toString() && j.status === 'open'
+            );
+
+            if (clientJobs.length === 0) {
+                const create = confirm('You don\'t have any open jobs. Would you like to create one?');
+                if (create) window.location.href = 'post-job.html';
+                return;
+            }
+
+            // Show job selection modal
+            showJobSelectionModal(clientJobs, freelancerId);
+        }
+
+        function showJobSelectionModal(jobs, freelancerId) {
+            const modal = document.createElement('div');
+            modal.className = 'hire-modal';
+            modal.innerHTML = `
+                <div class="hire-modal-content">
+                    <div class="hire-modal-header">
+                        <h2>Select a Job to Hire For</h2>
+                        <button onclick="this.closest('.hire-modal').remove()" class="close-modal">&times;</button>
+                    </div>
+                    <div class="hire-modal-body">
+                        ${jobs.map(job => `
+                            <div class="job-select-item" onclick="hireForJob('${job._id}', '${freelancerId}')">
+                                <h3>${job.title}</h3>
+                                <p class="job-budget">Budget: $${job.budget}</p>
+                                <p class="job-category">${job.category}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function hireForJob(jobId, freelancerId) {
+            // Create an application as "hired" status
+            const user = JSON.parse(localStorage.getItem('user'));
+            
+            const response = await fetch(`/api/jobs/${jobId}/apply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    freelancerId: freelancerId,
+                    coverLetter: 'Directly hired by client'
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Now hire them
+                const hireResponse = await fetch(`/api/applications/${data.application._id}/hire`, {
+                    method: 'PUT'
+                });
+
+                const hireData = await hireResponse.json();
+
+                if (hireData.success) {
+                    document.querySelector('.hire-modal').remove();
+                    alert('Freelancer hired successfully!');
+                    window.location.href = 'manage-applications.html';
+                } else {
+                    alert(hireData.error || 'Error hiring freelancer');
+                }
+            } else {
+                alert(data.error || 'Error creating application');
+            }
+        }
+
+        async function startConversation(freelancerId) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                alert('Please login first');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Send a test message to create conversation
+            const response = await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    senderId: user._id,
+                    receiverId: freelancerId,
+                    text: 'Hi! I\'m interested in working with you.'
+                })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = 'messages.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

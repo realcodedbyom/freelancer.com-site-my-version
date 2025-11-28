@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Profile - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-jobs.html">Browse Jobs</a></li>
+                <li><a href="freelancer-dashboard.html">Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <h1>Edit Your Profile</h1>
+        <p>Update your information to attract more clients</p>
+    </div>
+
+    <main>
+        <section class="section edit-profile-section">
+            <div class="edit-profile-container">
+                <form id="profileForm" class="profile-form">
+                    <div class="form-group">
+                        <label for="title">Professional Title *</label>
+                        <input type="text" id="title" name="title" placeholder="e.g., Full Stack Web Developer" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bio">Bio *</label>
+                        <textarea id="bio" name="bio" placeholder="Tell clients about yourself, your experience, and what makes you unique..." rows="6" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="hourlyRate">Hourly Rate ($) *</label>
+                        <input type="number" id="hourlyRate" name="hourlyRate" placeholder="e.g., 50" min="0" step="5" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="skills">Skills (comma-separated) *</label>
+                        <input type="text" id="skills" name="skills" placeholder="e.g., React, Node.js, MongoDB, JavaScript" required>
+                        <small>Enter your skills separated by commas</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="isAvailable">Availability Status</label>
+                        <select id="isAvailable" name="isAvailable" required>
+                            <option value="true">Available for work</option>
+                            <option value="false">Not available</option>
+                        </select>
+                    </div>
+
+                    <div class="form-message" id="formMessage"></div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary" style="width: auto; padding: 12px 40px;">Save Changes</button>
+                        <a href="freelancer-dashboard.html" class="btn-secondary" style="width: auto; padding: 12px 40px; display: inline-block; text-align: center; text-decoration: none;">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        async function loadProfile() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || user.userType !== 'freelancer') {
+                    alert('Please login as a freelancer');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const response = await fetch(`/api/freelancers/${user._id}`);
+                const data = await response.json();
+
+                if (data.success && data.freelancer) {
+                    const profile = data.freelancer.freelancerProfile || {};
+                    
+                    document.getElementById('title').value = profile.title || '';
+                    document.getElementById('bio').value = profile.bio || '';
+                    document.getElementById('hourlyRate').value = profile.hourlyRate || 0;
+                    document.getElementById('skills').value = (profile.skills || []).join(', ');
+                    document.getElementById('isAvailable').value = profile.isAvailable !== false ? 'true' : 'false';
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formMessage = document.getElementById('formMessage');
+            
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.userType !== 'freelancer') {
+                formMessage.textContent = 'Please login as a freelancer';
+                formMessage.className = 'form-message error';
+                return;
+            }
+
+            const profileData = {
+                freelancerProfile: {
+                    title: document.getElementById('title').value,
+                    bio: document.getElementById('bio').value,
+                    hourlyRate: parseFloat(document.getElementById('hourlyRate').value),
+                    skills: document.getElementById('skills').value.split(',').map(s => s.trim()).filter(s => s),
+                    isAvailable: document.getElementById('isAvailable').value === 'true',
+                    rating: user.freelancerProfile?.rating || 0,
+                    reviewCount: user.freelancerProfile?.reviewCount || 0
+                }
+            };
+
+            try {
+                const response = await fetch(`/api/freelancers/${user._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(profileData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update localStorage
+                    user.freelancerProfile = profileData.freelancerProfile;
+                    localStorage.setItem('user', JSON.stringify(user));
+
+                    formMessage.textContent = 'Profile updated successfully!';
+                    formMessage.className = 'form-message success';
+                    
+                    setTimeout(() => {
+                        window.location.href = 'freelancer-dashboard.html';
+                    }, 1500);
+                } else {
+                    formMessage.textContent = data.error || 'Error updating profile';
+                    formMessage.className = 'form-message error';
+                }
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                formMessage.textContent = 'Error updating profile. Please try again.';
+                formMessage.className = 'form-message error';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadProfile);
+    </script>
+</body>
+</html>

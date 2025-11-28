@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Applications - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-freelancers.html">Browse Freelancers</a></li>
+                <li><a href="post-job.html">Post a Job</a></li>
+                <li><a href="login.html" class="btn-login-nav">Login</a></li>
+                <li><a href="signup.html" class="btn-signup-nav">Sign Up</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <h1>Manage Applications</h1>
+        <p>Review and manage freelancer applications for your jobs</p>
+    </div>
+
+    <main>
+        <section class="section manage-section">
+            <div class="manage-container">
+                <!-- Jobs List -->
+                <aside class="jobs-list-sidebar">
+                    <h3>Your Jobs</h3>
+                    <div id="jobsList" class="jobs-list">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </aside>
+
+                <!-- Applications -->
+                <div class="applications-main">
+                    <div id="applicationsContainer" class="applications-container">
+                        <p style="text-align: center; color: #bbb;">Select a job to view applications</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let currentJobId = null;
+
+        let clientJobs = [];
+
+        async function loadClientJobs() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || user.userType !== 'client') {
+                    document.getElementById('jobsList').innerHTML = '<p>Please login as a client</p>';
+                    return;
+                }
+
+                const response = await fetch('/api/jobs');
+                const data = await response.json();
+                
+                if (data.success) {
+                    clientJobs = data.jobs.filter(j => j.clientId.toString() === user._id.toString());
+
+                    if (clientJobs.length === 0) {
+                        document.getElementById('jobsList').innerHTML = '<p>No jobs posted yet</p>';
+                        return;
+                    }
+
+                    // Get application counts
+                    const appsResponse = await fetch(`/api/applications/client/${user._id}`);
+                    const appsData = await appsResponse.json();
+                    
+                    const appCounts = {};
+                    if (appsData.success) {
+                        appsData.applications.forEach(app => {
+                            const jobId = app.jobId.toString();
+                            appCounts[jobId] = (appCounts[jobId] || 0) + 1;
+                        });
+                    }
+
+                    const jobsList = document.getElementById('jobsList');
+                    jobsList.innerHTML = clientJobs.map(job => `
+                        <div class="job-list-item" data-job-id="${job._id}" onclick="selectJob('${job._id}')">
+                            <h4>${job.title}</h4>
+                            <p class="app-count">${appCounts[job._id.toString()] || 0} applications</p>
+                        </div>
+                    `).join('');
+
+                    // Load first job by default
+                    if (clientJobs.length > 0) {
+                        selectJob(clientJobs[0]._id);
+                    }
+                }
+            } catch (error) {
+                console.error('[v0] Error loading jobs:', error);
+            }
+        }
+
+        function selectJob(jobId) {
+            currentJobId = jobId;
+            
+            // Update active state
+            document.querySelectorAll('.job-list-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            const clickedItem = document.querySelector(`[data-job-id="${jobId}"]`);
+            if (clickedItem) clickedItem.classList.add('active');
+
+            displayApplications(jobId);
+        }
+
+        async function displayApplications(jobId) {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                const response = await fetch(`/api/applications/client/${user._id}`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    document.getElementById('applicationsContainer').innerHTML = '<p>Error loading applications</p>';
+                    return;
+                }
+
+                const job = clientJobs.find(j => j._id.toString() === jobId.toString());
+                const jobApplications = data.applications.filter(app => app.jobId.toString() === jobId.toString());
+
+                const container = document.getElementById('applicationsContainer');
+
+                if (jobApplications.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #bbb;">No applications yet</p>';
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="applications-header">
+                        <h2>${job.title}</h2>
+                        <p>${jobApplications.length} applications</p>
+                    </div>
+                    <div class="applications-list">
+                        ${jobApplications.map(app => `
+                            <div class="application-card">
+                                <div class="app-header">
+                                    <h3>${app.freelancerName}</h3>
+                                    <span class="app-status ${app.status}">${app.status}</span>
+                                </div>
+                                <p class="app-date">Applied on ${new Date(app.appliedAt).toLocaleDateString()}</p>
+                                <div class="app-actions">
+                                    ${app.status === 'pending' ? `
+                                        <button class="btn-primary" onclick="hireFreelancer('${app._id}')">Hire</button>
+                                        <button class="btn-secondary" onclick="rejectApplication('${app._id}')">Reject</button>
+                                    ` : `
+                                        <button class="btn-secondary" disabled>${app.status === 'hired' ? 'Hired' : 'Rejected'}</button>
+                                    `}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('[v0] Error displaying applications:', error);
+            }
+        }
+
+        async function hireFreelancer(applicationId) {
+            try {
+                const response = await fetch(`/api/applications/${applicationId}/hire`, {
+                    method: 'PUT'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Freelancer hired successfully!');
+                    displayApplications(currentJobId);
+                } else {
+                    alert(data.error || 'Error hiring freelancer');
+                }
+            } catch (error) {
+                console.error('[v0] Error hiring freelancer:', error);
+                alert('Error hiring freelancer');
+            }
+        }
+
+        async function rejectApplication(applicationId) {
+            try {
+                const response = await fetch(`/api/applications/${applicationId}/reject`, {
+                    method: 'PUT'
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Application rejected');
+                    displayApplications(currentJobId);
+                } else {
+                    alert(data.error || 'Error rejecting application');
+                }
+            } catch (error) {
+                console.error('[v0] Error rejecting application:', error);
+                alert('Error rejecting application');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadClientJobs);
+    </script>
+</body>
+</html>

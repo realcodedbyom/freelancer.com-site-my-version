@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Freelancer Marketplace - Hire talented freelancers for web development, design, and video editing">
+    <title>Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-freelancers.html">Browse Freelancers</a></li>
+                <li><a href="post-job.html">Post a Job</a></li>
+                <li><a href="login.html" class="btn-login-nav">Login</a></li>
+                <li><a href="signup.html" class="btn-signup-nav">Sign Up</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <header>
+        <div class="header-content">
+            <h1>Find Your Perfect Freelancer</h1>
+            <p>Connect with talented professionals for web development, design, and video editing</p>
+            <div class="header-cta">
+                <a href="browse-freelancers.html" class="btn-primary">Browse Freelancers</a>
+                <a href="post-job.html" class="btn-secondary">Post a Job</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Monthly Leaderboard Section -->
+        <section class="section featured-section">
+            <h2 class="hover-underline-animation">Monthly Leaderboard</h2>
+            <p>Top freelancers this month, based on rating and jobs successfully done</p>
+            <div id="featuredFreelancers" class="freelancers-grid">
+                <!-- Loaded dynamically -->
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="section how-it-works">
+            <h2 class="hover-underline-animation">How It Works</h2>
+            <div class="steps-container">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3>Post a Job</h3>
+                    <p>Describe your project and requirements</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3>Browse Proposals</h3>
+                    <p>Review freelancer applications and portfolios</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3>Hire & Collaborate</h3>
+                    <p>Work together and communicate seamlessly</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h3>Pay Securely</h3>
+                    <p>Release payment when work is complete</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Services Section -->
+        <section class="section services-showcase">
+            <h2 class="hover-underline-animation">Services Available</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">💻</div>
+                    <h3>Web Development</h3>
+                    <p>Full-stack web applications, responsive design, and modern frameworks</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🎨</div>
+                    <h3>Photoshop Design</h3>
+                    <p>Professional graphic design, UI/UX, and digital art</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">🎬</div>
+                    <h3>Video Editing</h3>
+                    <p>Professional video editing, motion graphics, and post-production</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="section cta-section">
+            <h2>Ready to Get Started?</h2>
+            <p>Join thousands of clients finding the perfect freelancer for their projects</p>
+            <div class="cta-buttons">
+                <a href="signup.html" class="btn-primary">Sign Up Now</a>
+                <a href="browse-freelancers.html" class="btn-secondary">Browse Freelancers</a>
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Load monthly leaderboard on homepage (objective, no manual featuring)
+        async function loadFeaturedFreelancers() {
+            try {
+                const response = await fetch('/api/freelancers/leaderboard');
+                const data = await response.json();
+                
+                if (!data.success) {
+                    document.getElementById('featuredFreelancers').innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No freelancers available yet</p>';
+                    return;
+                }
+
+                const featured = data.freelancers || [];
+                const container = document.getElementById('featuredFreelancers');
+                
+                if (featured.length === 0) {
+                    container.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No freelancers available yet</p>';
+                    return;
+                }
+
+                container.innerHTML = featured.map((freelancer, index) => {
+                    const profile = freelancer.freelancerProfile || {};
+                    const reviewCount = profile.reviewCount || 0;
+                    const jobsThisMonth = freelancer.jobsDoneThisMonth || 0;
+                    const username = freelancer.username ? ` (@${freelancer.username})` : '';
+                    
+                    // Simple badge logic based on rating, jobs this month, and reviews
+                    let badge = '';
+                    if ((profile.rating || 0) >= 4.8 && reviewCount >= 10) {
+                        badge = 'Top Rated';
+                    } else if (jobsThisMonth >= 3) {
+                        badge = 'Active this month';
+                    } else if ((profile.rating || 0) >= 4.2 && reviewCount >= 3) {
+                        badge = 'Rising Talent';
+                    }
+
+                    return `
+                        <div class="freelancer-card">
+                            <div class="freelancer-header">
+                                <div>
+                                    <h3>#${index + 1} ${freelancer.name}</h3>
+                                    ${username ? `<p style="color: #888; font-size: 0.9rem; margin-top: 2px;">${username}</p>` : ''}
+                                </div>
+                                <div class="rating">⭐ ${profile.rating || 0}</div>
+                            </div>
+                            ${badge ? `<p style="margin-top: 4px; color: #10b981; font-size: 0.85rem; font-weight: 600;">${badge}</p>` : ''}
+                            <p class="freelancer-title">${profile.title || 'Freelancer'}</p>
+                            <p class="freelancer-bio">${profile.bio || 'No bio available'}</p>
+                            <div class="freelancer-skills">
+                                ${(profile.skills || []).map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                            </div>
+                            <div class="freelancer-footer">
+                                <span class="hourly-rate">$${profile.hourlyRate || 0}/hr</span>
+                                <span class="jobs-done">Jobs this month: ${freelancer.jobsDoneThisMonth || 0}</span>
+                                <a href="freelancer-profile.html?id=${freelancer._id}" class="btn-view-profile">View Profile</a>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('[v0] Error loading featured freelancers:', error);
+            }
+        }
+
+        // Adjust CTA section based on login state on root index as well
+        function updateHomeCTA() {
+            const user = JSON.parse(localStorage.getItem('user') || 'null');
+            const ctaSection = document.querySelector('.cta-section');
+            if (!ctaSection) return;
+
+            const heading = ctaSection.querySelector('h2');
+            const paragraph = ctaSection.querySelector('p');
+            const buttons = ctaSection.querySelector('.cta-buttons');
+
+            if (!user) return;
+
+            if (user.userType === 'freelancer') {
+                heading.textContent = 'Welcome back!';
+                paragraph.textContent = 'Jump into your dashboard or find new jobs to apply for.';
+                buttons.innerHTML = `
+                    <a href="freelancer-dashboard.html" class="btn-primary">Go to Dashboard</a>
+                    <a href="browse-jobs.html" class="btn-secondary">Browse Jobs</a>
+                `;
+            } else if (user.userType === 'client') {
+                heading.textContent = 'Welcome back!';
+                paragraph.textContent = 'Manage your jobs or find freelancers to hire.';
+                buttons.innerHTML = `
+                    <a href="client-dashboard.html" class="btn-primary">Go to Dashboard</a>
+                    <a href="browse-freelancers.html" class="btn-secondary">Browse Freelancers</a>
+                `;
+            } else if (user.userType === 'admin') {
+                heading.textContent = 'Admin overview';
+                paragraph.textContent = 'Monitor users, jobs, and applications from the admin dashboard.';
+                buttons.innerHTML = `
+                    <a href="admin-dashboard.html" class="btn-primary">Admin Dashboard</a>
+                `;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFeaturedFreelancers();
+            updateHomeCTA();
+        });
+    </script>
+</body>
+</html>

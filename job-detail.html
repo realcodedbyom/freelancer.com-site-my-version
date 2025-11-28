@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Details - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-freelancers.html">Browse Freelancers</a></li>
+                <li><a href="post-job.html">Post a Job</a></li>
+                <li><a href="login.html" class="btn-login-nav">Login</a></li>
+                <li><a href="signup.html" class="btn-signup-nav">Sign Up</a></li>
+            </ul>
+            <!-- Navigation will be updated by script.js based on login status -->
+        </div>
+    </nav>
+
+    <main>
+        <section class="section job-detail-section">
+            <div id="jobDetailContainer">
+                <!-- Loaded dynamically -->
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        async function loadJobDetail() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const jobId = params.get('id');
+
+                if (!jobId) {
+                    document.getElementById('jobDetailContainer').innerHTML = '<p>Job not found</p>';
+                    return;
+                }
+
+                const response = await fetch(`/api/jobs/${jobId}`);
+                const data = await response.json();
+
+                if (!data.success || !data.job) {
+                    document.getElementById('jobDetailContainer').innerHTML = '<p>Job not found</p>';
+                    return;
+                }
+
+                const job = data.job;
+
+                const user = JSON.parse(localStorage.getItem('user'));
+                const container = document.getElementById('jobDetailContainer');
+                
+                let actionButton = '';
+                if (user && user.userType === 'freelancer') {
+                    // Check if already applied
+                    const checkResponse = await fetch(`/api/applications/freelancer/${user._id}`);
+                    const checkData = await checkResponse.json();
+                    const hasApplied = checkData.success && checkData.applications.some(app => app.jobId === job._id);
+                    
+                    actionButton = hasApplied 
+                        ? '<button class="btn-secondary" disabled>Already Applied</button>'
+                        : `<button class="btn-primary" onclick="applyForJob('${job._id}')">Apply Now</button>`;
+                } else if (!user) {
+                    actionButton = '<a href="login.html" class="btn-primary">Login to Apply</a>';
+                }
+
+                container.innerHTML = `
+                    <div class="job-detail-card">
+                        <div class="job-detail-header">
+                            <h1>${job.title}</h1>
+                            <span class="job-status">${job.status}</span>
+                        </div>
+
+                        <div class="job-detail-meta">
+                            <div class="meta-item">
+                                <span class="label">Posted by:</span>
+                                <span class="value">${job.clientName}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label">Category:</span>
+                                <span class="value">${job.category}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label">Budget:</span>
+                                <span class="value">$${job.budget}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label">Deadline:</span>
+                                <span class="value">${new Date(job.deadline).toLocaleDateString()}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label">Experience Level:</span>
+                                <span class="value">${job.experience}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="label">Applications:</span>
+                                <span class="value">${job.applicationsCount || 0}</span>
+                            </div>
+                        </div>
+
+                        <div class="job-detail-description">
+                            <h3>Description</h3>
+                            <p>${job.description}</p>
+                        </div>
+
+                        <div class="job-detail-skills">
+                            <h3>Required Skills</h3>
+                            <div class="skills-list">
+                                ${job.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="job-detail-actions">
+                            ${actionButton}
+                            <a href="browse-jobs.html" class="btn-secondary">Back to Jobs</a>
+                            <button class="btn-secondary btn-danger" onclick="reportJob('${job._id}', '${job.title.replace(/'/g, "\\'")}')">Report Job</button>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('[v0] Error loading job detail:', error);
+            }
+        }
+
+        async function reportJob(jobId, jobTitle) {
+            try {
+                const user = JSON.parse(localStorage.getItem('user') || 'null');
+                if (!user) {
+                    alert('Please login to report.');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const reason = prompt(`Why are you reporting this job "${jobTitle}"? (required)`);
+                if (!reason || !reason.trim()) return;
+                const details = prompt('Any additional details? (optional)') || '';
+
+                const res = await fetch('/api/reports', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reporterId: user._id,
+                        type: 'job',
+                        jobId,
+                        reason: reason.trim(),
+                        details
+                    })
+                });
+
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.error || 'Failed to submit report');
+                    return;
+                }
+
+                alert('Report submitted to admins. Thank you for helping keep the platform safe.');
+            } catch (err) {
+                console.error('Error reporting job:', err);
+                alert('Failed to submit report');
+            }
+        }
+
+        async function applyForJob(jobId) {
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user || user.userType !== 'freelancer') {
+                alert('Please login as a freelancer to apply');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/jobs/${jobId}/apply`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        freelancerId: user._id,
+                        coverLetter: ''
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('Application submitted successfully!');
+                    location.reload();
+                } else {
+                    alert(data.error || 'Error submitting application');
+                }
+            } catch (error) {
+                console.error('[v0] Error applying for job:', error);
+                alert('Error submitting application');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadJobDetail);
+    </script>
+</body>
+</html>

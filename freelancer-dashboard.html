@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Freelancer Dashboard - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-jobs.html">Browse Jobs</a></li>
+                <li><a href="my-applications.html">My Applications</a></li>
+                <li><a href="freelancer-dashboard.html">Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="section dashboard-section">
+            <div class="dashboard-header">
+                <h1>Freelancer Dashboard</h1>
+                <p id="welcomeMessage">Welcome back!</p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-content">
+                        <h3>Total Applications</h3>
+                        <p class="stat-number" id="totalApps">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <h3>Jobs Hired</h3>
+                        <p class="stat-number" id="hiredJobs">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-content">
+                        <h3>Pending</h3>
+                        <p class="stat-number" id="pendingApps">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-content">
+                        <h3>Potential Earnings</h3>
+                        <p class="stat-number" id="potentialEarnings">$0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="dashboard-section-box">
+                <h2>Quick Actions</h2>
+                <div class="quick-actions">
+                    <a href="browse-jobs.html" class="action-btn">
+                        <span class="action-icon">🔍</span>
+                        <span>Browse Jobs</span>
+                    </a>
+                    <a href="my-applications.html" class="action-btn">
+                        <span class="action-icon">📋</span>
+                        <span>My Applications</span>
+                    </a>
+                    <a href="edit-profile.html" class="action-btn">
+                        <span class="action-icon">👤</span>
+                        <span>Edit Profile</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="dashboard-section-box">
+                <h2>Recent Activity</h2>
+                <div id="recentActivity" class="activity-list">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Client Interest Requests (Tinder-style) -->
+            <div class="dashboard-section-box">
+                <h2>Client Interest Requests</h2>
+                <div id="interestRequests" class="applications-list-dashboard">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Profile Summary -->
+            <div class="dashboard-section-box">
+                <h2>Profile Summary</h2>
+                <div id="profileSummary" class="profile-summary">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        async function loadDashboard() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || user.userType !== 'freelancer') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                document.getElementById('welcomeMessage').textContent = `Welcome back, ${user.name}!`;
+
+                const res = await fetch(`/api/dashboard/freelancer/${user._id}`);
+                if (!res.ok) throw new Error('Failed to fetch dashboard');
+
+                const data = await res.json();
+                const { stats, recentActivity, profileSummary } = data;
+
+                // Stats
+                document.getElementById('totalApps').textContent = stats.totalApps;
+                document.getElementById('hiredJobs').textContent = stats.hiredJobs;
+                document.getElementById('pendingApps').textContent = stats.pendingApps;
+                document.getElementById('potentialEarnings').textContent = '$' + stats.potentialEarnings;
+
+                // Activity
+                const activityList = document.getElementById('recentActivity');
+                if (recentActivity.length === 0) {
+                    activityList.innerHTML = '<p style="color: #bbb;">No recent activity</p>';
+                } else {
+                    activityList.innerHTML = recentActivity.map(act => `
+                        <div class="activity-item">
+                            <span class="activity-icon">✅</span>
+                            <div class="activity-content">
+                                <p>You were hired for <strong>${act.jobTitle}</strong></p>
+                                <span class="activity-date">${new Date(act.date).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Profile summary
+                if (profileSummary) {
+                    document.getElementById('profileSummary').innerHTML = `
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span class="label">Title:</span>
+                                <span class="value">${profileSummary.title || ''}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Hourly Rate:</span>
+                                <span class="value">$${profileSummary.hourlyRate || 0}/hr</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Rating:</span>
+                                <span class="value">⭐ ${profileSummary.rating || 0}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Status:</span>
+                                <span class="value">${profileSummary.isAvailable ? 'Available' : 'Not Available'}</span>
+                            </div>
+                        </div>
+                        <div class="summary-skills">
+                            <h4>Skills</h4>
+                            <div class="skills-list">
+                                ${(profileSummary.skills || []).map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                            </div>
+                        </div>`;
+                }
+
+                // Load interest requests from clients (Tinder-style)
+                await loadInterestRequests(user._id);
+            } catch (error) {
+                console.error('[v1] Error loading dashboard:', error);
+            }
+        }
+
+        async function loadInterestRequests(freelancerId) {
+            try {
+                const res = await fetch(`/api/interests/freelancer/${freelancerId}`);
+                const data = await res.json();
+                const container = document.getElementById('interestRequests');
+
+                if (!data.success) {
+                    container.innerHTML = '<p style="color: #bbb;">Failed to load interest requests</p>';
+                    return;
+                }
+
+                const interests = (data.interests || []).sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+
+                if (interests.length === 0) {
+                    container.innerHTML = '<p style="color: #bbb;">No interest requests yet</p>';
+                    return;
+                }
+
+                container.innerHTML = interests.map(interest => {
+                    const client = interest.client || {};
+                    const status = interest.status || 'pending';
+
+                    let statusLabel = '';
+                    if (status === 'pending') statusLabel = 'Pending';
+                    else if (status === 'accepted') statusLabel = 'Matched';
+                    else if (status === 'rejected') statusLabel = 'Rejected';
+
+                    return `
+                        <div class="app-item-dashboard">
+                            <div class="app-item-content">
+                                <p><strong>${client.name || 'Client'}</strong> showed interest in working with you</p>
+                                <span class="app-item-date">${new Date(interest.createdAt).toLocaleDateString()}</span>
+                            </div>
+                            <div class="app-actions">
+                                <span class="app-status ${status}">${statusLabel}</span>
+                                ${status === 'pending' ? `
+                                    <button class="btn-small" onclick="respondInterest('${interest._id}', 'accept')">Accept</button>
+                                    <button class="btn-small btn-danger" onclick="respondInterest('${interest._id}', 'reject')">Reject</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                console.error('Error loading interest requests:', err);
+                document.getElementById('interestRequests').innerHTML =
+                    '<p style="color: #bbb;">Failed to load interest requests</p>';
+            }
+        }
+
+        async function respondInterest(interestId, action) {
+            try {
+                const endpoint = action === 'accept' ? 'accept' : 'reject';
+                const res = await fetch(`/api/interests/${interestId}/${endpoint}`, {
+                    method: 'PUT'
+                });
+                const data = await res.json();
+
+                if (!data.success) {
+                    alert(data.error || 'Failed to update interest');
+                    return;
+                }
+
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (user && user.userType === 'freelancer') {
+                    await loadInterestRequests(user._id);
+                }
+            } catch (err) {
+                console.error('Error responding to interest:', err);
+                alert('Failed to update interest');
+            }
+        }
+        /* Legacy duplicate block (prototype) disabled
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || user.userType !== 'freelancer') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                document.getElementById('welcomeMessage').textContent = `Welcome back, ${user.name}!`;
+
+                const db = JSON.parse(localStorage.getItem('database') || '{"jobs":[],"freelancers":[]}');
+                
+                // Calculate stats
+                let totalApps = 0;
+                let hiredJobs = 0;
+                let pendingApps = 0;
+                let potentialEarnings = 0;
+                const activities = [];
+
+                db.jobs.forEach(job => {
+                    job.applications.forEach(app => {
+                        if (app.freelancerId === user.freelancerId) {
+                            totalApps++;
+                            if (app.status === 'hired') {
+                                hiredJobs++;
+                                potentialEarnings += job.budget;
+                                activities.push({
+                                    type: 'hired',
+                                    job: job.title,
+                                    date: app.appliedAt
+                                });
+                            } else if (app.status === 'pending') {
+                                pendingApps++;
+                            }
+                        }
+                    });
+                });
+
+                document.getElementById('totalApps').textContent = totalApps;
+                document.getElementById('hiredJobs').textContent = hiredJobs;
+                document.getElementById('pendingApps').textContent = pendingApps;
+                document.getElementById('potentialEarnings').textContent = '$' + potentialEarnings;
+
+                // Display recent activity
+                const activityList = document.getElementById('recentActivity');
+                if (activities.length === 0) {
+                    activityList.innerHTML = '<p style="color: #bbb;">No recent activity</p>';
+                } else {
+                    activityList.innerHTML = activities.slice(0, 5).map(activity => `
+                        <div class="activity-item">
+                            <span class="activity-icon">✅</span>
+                            <div class="activity-content">
+                                <p>You were hired for <strong>${activity.job}</strong></p>
+                                <span class="activity-date">${new Date(activity.date).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+                // Display profile summary
+                const freelancer = db.freelancers.find(f => f.id === user.freelancerId);
+                if (freelancer) {
+                    document.getElementById('profileSummary').innerHTML = `
+                        <div class="summary-grid">
+                            <div class="summary-item">
+                                <span class="label">Title:</span>
+                                <span class="value">${freelancer.title}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Hourly Rate:</span>
+                                <span class="value">$${freelancer.hourlyRate}/hr</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Rating:</span>
+                                <span class="value">⭐ ${freelancer.rating}</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Status:</span>
+                                <span class="value">${freelancer.isAvailable ? 'Available' : 'Not Available'}</span>
+                            </div>
+                        </div>
+                        <div class="summary-skills">
+                            <h4>Skills</h4>
+                            <div class="skills-list">
+                                ${freelancer.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('[v0] Error loading dashboard:', error);
+            }
+        */
+
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>

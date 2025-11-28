@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Post a Job - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-freelancers.html">Browse Freelancers</a></li>
+                <li><a href="post-job.html">Post a Job</a></li>
+                <li><a href="login.html" class="btn-login-nav">Login</a></li>
+                <li><a href="signup.html" class="btn-signup-nav">Sign Up</a></li>
+            </ul>
+            <!-- Navigation will be updated by script.js based on login status -->
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <h1>Post a Job</h1>
+        <p>Find the perfect freelancer for your project</p>
+    </div>
+
+    <main>
+        <section class="section post-job-section">
+            <div class="post-job-container">
+                <div class="job-form-wrapper">
+                    <h2>Job Details</h2>
+                    <form id="jobForm" class="job-form">
+                        <div class="form-group">
+                            <label for="jobTitle">Job Title *</label>
+                            <input type="text" id="jobTitle" name="jobTitle" placeholder="e.g., Build a React Website" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="jobCategory">Category *</label>
+                            <select id="jobCategory" name="jobCategory" required>
+                                <option value="">Select a category</option>
+                                <option value="Web Development">Web Development</option>
+                                <option value="Photoshop">Photoshop Design</option>
+                                <option value="Video Editing">Video Editing</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="jobDescription">Job Description *</label>
+                            <textarea id="jobDescription" name="jobDescription" placeholder="Describe your project in detail..." required></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="budget">Budget ($) *</label>
+                                <input type="number" id="budget" name="budget" placeholder="e.g., 500" min="0" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="deadline">Deadline *</label>
+                                <input type="date" id="deadline" name="deadline" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="skills">Required Skills (comma-separated) *</label>
+                            <input type="text" id="skills" name="skills" placeholder="e.g., React, Node.js, MongoDB" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="experience">Experience Level Required *</label>
+                            <select id="experience" name="experience" required>
+                                <option value="">Select experience level</option>
+                                <option value="Entry Level">Entry Level</option>
+                                <option value="Intermediate">Intermediate</option>
+                                <option value="Expert">Expert</option>
+                            </select>
+                        </div>
+
+                        <div class="form-message" id="formMessage"></div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">Post Job</button>
+                    </form>
+                </div>
+
+                <div class="job-preview">
+                    <h2>Preview</h2>
+                    <div class="preview-card">
+                        <h3 id="previewTitle">Your job title will appear here</h3>
+                        <p class="preview-category" id="previewCategory">Category</p>
+                        <p id="previewDescription">Your job description will appear here</p>
+                        <div class="preview-details">
+                            <div class="preview-item">
+                                <span class="label">Budget:</span>
+                                <span id="previewBudget">$0</span>
+                            </div>
+                            <div class="preview-item">
+                                <span class="label">Deadline:</span>
+                                <span id="previewDeadline">Not set</span>
+                            </div>
+                            <div class="preview-item">
+                                <span class="label">Experience:</span>
+                                <span id="previewExperience">Not set</span>
+                            </div>
+                        </div>
+                        <div class="preview-skills" id="previewSkills"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        const form = document.getElementById('jobForm');
+        const formMessage = document.getElementById('formMessage');
+
+        // Live preview updates
+        document.getElementById('jobTitle').addEventListener('input', (e) => {
+            document.getElementById('previewTitle').textContent = e.target.value || 'Your job title will appear here';
+        });
+
+        document.getElementById('jobCategory').addEventListener('change', (e) => {
+            document.getElementById('previewCategory').textContent = e.target.value || 'Category';
+        });
+
+        document.getElementById('jobDescription').addEventListener('input', (e) => {
+            document.getElementById('previewDescription').textContent = e.target.value || 'Your job description will appear here';
+        });
+
+        document.getElementById('budget').addEventListener('input', (e) => {
+            document.getElementById('previewBudget').textContent = '$' + (e.target.value || '0');
+        });
+
+        document.getElementById('deadline').addEventListener('change', (e) => {
+            document.getElementById('previewDeadline').textContent = e.target.value || 'Not set';
+        });
+
+        document.getElementById('experience').addEventListener('change', (e) => {
+            document.getElementById('previewExperience').textContent = e.target.value || 'Not set';
+        });
+
+        document.getElementById('skills').addEventListener('input', (e) => {
+            const skills = e.target.value.split(',').map(s => s.trim()).filter(s => s);
+            document.getElementById('previewSkills').innerHTML = skills.map(skill => 
+                `<span class="skill-tag">${skill}</span>`
+            ).join('');
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const user = JSON.parse(localStorage.getItem('user'));
+            if (!user) {
+                formMessage.textContent = 'Please login first';
+                formMessage.className = 'form-message error';
+                return;
+            }
+
+            if (user.userType !== 'client') {
+                formMessage.textContent = 'Only clients can post jobs';
+                formMessage.className = 'form-message error';
+                return;
+            }
+
+            const jobData = {
+                clientId: user._id,
+                clientName: user.name,
+                title: document.getElementById('jobTitle').value,
+                category: document.getElementById('jobCategory').value,
+                description: document.getElementById('jobDescription').value,
+                budget: parseFloat(document.getElementById('budget').value),
+                deadline: document.getElementById('deadline').value,
+                skills: document.getElementById('skills').value.split(',').map(s => s.trim()),
+                experience: document.getElementById('experience').value
+            };
+
+            try {
+                const response = await fetch('/api/jobs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(jobData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    formMessage.textContent = 'Job posted successfully! Redirecting...';
+                    formMessage.className = 'form-message success';
+                    
+                    setTimeout(() => {
+                        window.location.href = 'browse-jobs.html';
+                    }, 2000);
+                } else {
+                    formMessage.textContent = data.error || 'Error posting job';
+                    formMessage.className = 'form-message error';
+                }
+            } catch (error) {
+                console.error('[v0] Error posting job:', error);
+                formMessage.textContent = 'Error posting job. Please try again.';
+                formMessage.className = 'form-message error';
+            }
+        });
+    </script>
+</body>
+</html>

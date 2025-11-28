@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-freelancers.html">Browse Freelancers</a></li>
+                <li><a href="post-job.html">Post a Job</a></li>
+                <li><a href="client-dashboard.html">Dashboard</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="section dashboard-section">
+            <div class="dashboard-header">
+                <h1>Client Dashboard</h1>
+                <p id="welcomeMessage">Welcome back!</p>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-content">
+                        <h3>Jobs Posted</h3>
+                        <p class="stat-number" id="jobsPosted">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-content">
+                        <h3>Total Applications</h3>
+                        <p class="stat-number" id="totalApplications">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-content">
+                        <h3>Hired Freelancers</h3>
+                        <p class="stat-number" id="hiredFreelancers">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💵</div>
+                    <div class="stat-content">
+                        <h3>Total Spent</h3>
+                        <p class="stat-number" id="totalSpent">$0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="dashboard-section-box">
+                <h2>Quick Actions</h2>
+                <div class="quick-actions">
+                    <a href="post-job.html" class="action-btn">
+                        <span class="action-icon">➕</span>
+                        <span>Post a Job</span>
+                    </a>
+                    <a href="browse-freelancers.html" class="action-btn">
+                        <span class="action-icon">🔍</span>
+                        <span>Browse Freelancers</span>
+                    </a>
+                    <a href="manage-applications.html" class="action-btn">
+                        <span class="action-icon">📋</span>
+                        <span>Manage Applications</span>
+                    </a>
+                    <a href="hired-freelancers.html" class="action-btn">
+                        <span class="action-icon">👥</span>
+                        <span>Hired Freelancers</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Active Jobs -->
+            <div class="dashboard-section-box">
+                <h2>Active Jobs</h2>
+                <div id="activeJobs" class="jobs-list-dashboard">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Recent Applications -->
+            <div class="dashboard-section-box">
+                <h2>Recent Applications</h2>
+                <div id="recentApplications" class="applications-list-dashboard">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        async function loadDashboard() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || user.userType !== 'client') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                document.getElementById('welcomeMessage').textContent = `Welcome back, ${user.name}!`;
+
+                const db = JSON.parse(localStorage.getItem('database') || '{"jobs":[],"freelancers":[]}');
+                
+                // Calculate stats
+                const clientJobs = db.jobs.filter(j => j.clientId === user.id);
+                let totalApplications = 0;
+                let hiredFreelancers = 0;
+                let totalSpent = 0;
+
+                clientJobs.forEach(job => {
+                    totalApplications += job.applications.length;
+                    job.applications.forEach(app => {
+                        if (app.status === 'hired') {
+                            hiredFreelancers++;
+                            totalSpent += job.budget;
+                        }
+                    });
+                });
+
+                document.getElementById('jobsPosted').textContent = clientJobs.length;
+                document.getElementById('totalApplications').textContent = totalApplications;
+                document.getElementById('hiredFreelancers').textContent = hiredFreelancers;
+                document.getElementById('totalSpent').textContent = '$' + totalSpent;
+
+                // Display active jobs
+                const activeJobsList = document.getElementById('activeJobs');
+                const activeJobs = clientJobs.filter(j => j.status === 'open' || j.status === 'in-progress');
+                
+                if (activeJobs.length === 0) {
+                    activeJobsList.innerHTML = '<p style="color: #bbb;">No active jobs</p>';
+                } else {
+                    activeJobsList.innerHTML = activeJobs.slice(0, 5).map(job => `
+                        <div class="job-item-dashboard">
+                            <div class="job-item-header">
+                                <h4>${job.title}</h4>
+                                <span class="job-status">${job.status}</span>
+                            </div>
+                            <p class="job-item-meta">
+                                <span>${job.applications.length} applications</span>
+                                <span>Budget: $${job.budget}</span>
+                            </p>
+                            <a href="manage-applications.html" class="btn-small">View Applications</a>
+                        </div>
+                    `).join('');
+                }
+
+                // Display recent applications
+                const recentAppsList = document.getElementById('recentApplications');
+                const allApplications = [];
+                
+                clientJobs.forEach(job => {
+                    job.applications.forEach(app => {
+                        allApplications.push({
+                            jobTitle: job.title,
+                            freelancerName: app.freelancerName,
+                            status: app.status,
+                            appliedAt: app.appliedAt
+                        });
+                    });
+                });
+
+                if (allApplications.length === 0) {
+                    recentAppsList.innerHTML = '<p style="color: #bbb;">No applications yet</p>';
+                } else {
+                    recentAppsList.innerHTML = allApplications.slice(0, 5).map(app => `
+                        <div class="app-item-dashboard">
+                            <div class="app-item-content">
+                                <p><strong>${app.freelancerName}</strong> applied for <strong>${app.jobTitle}</strong></p>
+                                <span class="app-item-date">${new Date(app.appliedAt).toLocaleDateString()}</span>
+                            </div>
+                            <span class="app-status ${app.status}">${app.status}</span>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('[v0] Error loading dashboard:', error);
+            }
+        }
+
+        // New dashboard after API integration
+        async function loadDashboardV1() {
+            try {
+                const user = JSON.parse(localStorage.getItem('user'));
+                if (!user || user.userType !== 'client') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                document.getElementById('welcomeMessage').textContent = `Welcome back, ${user.name}!`;
+
+                const res = await fetch(`/api/dashboard/client/${user._id}`);
+                if (!res.ok) throw new Error('Failed to fetch dashboard');
+
+                const { stats, activeJobs, recentApplications } = await res.json();
+
+                // Stats
+                document.getElementById('jobsPosted').textContent = stats.jobsPosted;
+                document.getElementById('totalApplications').textContent = stats.totalApplications;
+                document.getElementById('hiredFreelancers').textContent = stats.hiredFreelancers;
+                document.getElementById('totalSpent').textContent = '$' + stats.totalSpent;
+
+                // Active jobs
+                const activeJobsList = document.getElementById('activeJobs');
+                if (activeJobs.length === 0) {
+                    activeJobsList.innerHTML = '<p style="color: #bbb;">No active jobs</p>';
+                } else {
+                    activeJobsList.innerHTML = activeJobs.slice(0, 5).map(job => `
+                        <div class="job-item-dashboard">
+                            <div class="job-item-header">
+                                <h4>${job.title}</h4>
+                                <span class="job-status">${job.status}</span>
+                            </div>
+                            <p class="job-item-meta">
+                                <span>${job.applicationsCount || 0} applications</span>
+                                <span>Budget: $${job.budget}</span>
+                            </p>
+                            <a href="manage-applications.html" class="btn-small">View Applications</a>
+                        </div>`).join('');
+                }
+
+                // Recent applications
+                const recentAppsList = document.getElementById('recentApplications');
+                if (recentApplications.length === 0) {
+                    recentAppsList.innerHTML = '<p style="color: #bbb;">No applications yet</p>';
+                } else {
+                    recentAppsList.innerHTML = recentApplications.map(app => `
+                        <div class="app-item-dashboard">
+                            <div class="app-item-content">
+                                <p><strong>${app.freelancerName}</strong> applied for <strong>${app.jobTitle}</strong></p>
+                                <span class="app-item-date">${new Date(app.appliedAt).toLocaleDateString()}</span>
+                            </div>
+                            <span class="app-status ${app.status}">${app.status}</span>
+                        </div>`).join('');
+                }
+            } catch (err) {
+                console.error('[v1] Error loading dashboard:', err);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDashboardV1);
+    </script>
+</body>
+</html>

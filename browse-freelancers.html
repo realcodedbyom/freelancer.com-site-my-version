@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Freelancers - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="browse-freelancers.html">Browse Freelancers</a></li>
+                <li><a href="post-job.html">Post a Job</a></li>
+                <li><a href="login.html" class="btn-login-nav">Login</a></li>
+                <li><a href="signup.html" class="btn-signup-nav">Sign Up</a></li>
+            </ul>
+            <!-- Navigation will be updated by script.js based on login status -->
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <h1>Browse Freelancers</h1>
+        <p>Find the perfect freelancer for your project</p>
+    </div>
+
+    <main>
+        <section class="section browse-section">
+            <div class="browse-container">
+                <!-- Filters Sidebar -->
+                <aside class="filters-sidebar">
+                    <h3>Filters</h3>
+                    
+                    <div class="filter-group">
+                        <label for="skillFilter">Skills</label>
+                        <select id="skillFilter">
+                            <option value="">All Skills</option>
+                            <option value="Web Development">Web Development</option>
+                            <option value="Photoshop">Photoshop</option>
+                            <option value="Video Editing">Video Editing</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="rateFilter">Hourly Rate</label>
+                        <select id="rateFilter">
+                            <option value="">All Rates</option>
+                            <option value="0-25">$0 - $25</option>
+                            <option value="25-50">$25 - $50</option>
+                            <option value="50-100">$50 - $100</option>
+                            <option value="100+">$100+</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="ratingFilter">Minimum Rating</label>
+                        <select id="ratingFilter">
+                            <option value="">All Ratings</option>
+                            <option value="3">3+ Stars</option>
+                            <option value="4">4+ Stars</option>
+                            <option value="5">5 Stars</option>
+                        </select>
+                    </div>
+
+                    <button id="applyFilters" class="btn-primary" style="width: 100%; margin-top: 20px;">Apply Filters</button>
+                </aside>
+
+                <!-- Freelancers Grid -->
+                <div class="freelancers-main">
+                    <div id="freelancersContainer" class="freelancers-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let allFreelancers = [];
+        let currentUser = null;
+        let clientInterests = [];
+
+        async function loadFreelancers() {
+            try {
+                currentUser = JSON.parse(localStorage.getItem('user'));
+
+                const response = await fetch('/api/freelancers');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Map to match old structure
+                    allFreelancers = data.freelancers.map(f => ({
+                        id: f._id,
+                        name: f.name,
+                        title: f.freelancerProfile?.title || 'Freelancer',
+                        bio: f.freelancerProfile?.bio || 'No bio available',
+                        skills: f.freelancerProfile?.skills || [],
+                        hourlyRate: f.freelancerProfile?.hourlyRate || 0,
+                        rating: f.freelancerProfile?.rating || 0,
+                        reviews: f.freelancerProfile?.reviewCount || 0
+                    }));
+
+                    // If logged in as client, load existing interests to show status on cards
+                    if (currentUser && currentUser.userType === 'client') {
+                        try {
+                            const interestsRes = await fetch(`/api/interests/client/${currentUser._id}`);
+                            const interestsData = await interestsRes.json();
+                            if (interestsData.success) {
+                                clientInterests = interestsData.interests || [];
+                            }
+                        } catch (e) {
+                            console.error('Error loading interests:', e);
+                        }
+                    }
+
+                    displayFreelancers(allFreelancers);
+                }
+            } catch (error) {
+                console.error('[v0] Error loading freelancers:', error);
+            }
+        }
+
+        function displayFreelancers(freelancers) {
+            const container = document.getElementById('freelancersContainer');
+            
+            if (freelancers.length === 0) {
+                container.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">No freelancers found</p>';
+                return;
+            }
+
+            container.innerHTML = freelancers.map(freelancer => {
+                let interestLabel = '';
+                let interestClass = '';
+
+                if (currentUser && currentUser.userType === 'client') {
+                    const interest = clientInterests.find(i => i.toUserId === freelancer.id || (i.freelancer && i.freelancer._id === freelancer.id));
+                    if (interest) {
+                        if (interest.status === 'pending') {
+                            interestLabel = 'Interest Sent';
+                            interestClass = 'interest-pending';
+                        } else if (interest.status === 'accepted') {
+                            interestLabel = 'Matched';
+                            interestClass = 'interest-accepted';
+                        } else if (interest.status === 'rejected') {
+                            interestLabel = 'Rejected';
+                            interestClass = 'interest-rejected';
+                        }
+                    }
+                }
+
+                // Badge based on rating only (since this view does not know jobs/month)
+                let badge = '';
+                if (freelancer.rating >= 4.8) {
+                    badge = 'Top Rated';
+                } else if (freelancer.rating >= 4.2) {
+                    badge = 'Rising Talent';
+                }
+
+                return `
+                <div class="freelancer-card">
+                    <div class="freelancer-header">
+                        <div>
+                            <h3>${freelancer.name}</h3>
+                            ${badge ? `<p style="color: #10b981; font-size: 0.8rem; margin-top: 2px;">${badge}</p>` : ''}
+                        </div>
+                        <div class="rating">⭐ ${freelancer.rating}</div>
+                    </div>
+                    <p class="freelancer-title">${freelancer.title}</p>
+                    <p class="freelancer-bio">${freelancer.bio}</p>
+                    <div class="freelancer-skills">
+                        ${freelancer.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
+                    </div>
+                    <div class="freelancer-footer">
+                        <span class="hourly-rate">$${freelancer.hourlyRate}/hr</span>
+                        <a href="freelancer-profile.html?id=${freelancer.id}" class="btn-view-profile">View Profile</a>
+                        ${currentUser && currentUser.userType === 'client' ? `
+                            <button 
+                                class="btn-secondary interest-btn ${interestClass}" 
+                                onclick="event.stopPropagation(); showInterest('${freelancer.id}')"
+                                ${interestLabel === 'Matched' || interestLabel === 'Rejected' ? 'disabled' : ''}
+                            >
+                                ${interestLabel || '💚 Show Interest'}
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function applyFilters() {
+            const skill = document.getElementById('skillFilter').value;
+            const rate = document.getElementById('rateFilter').value;
+            const rating = document.getElementById('ratingFilter').value;
+
+            let filtered = allFreelancers;
+
+            if (skill) {
+                filtered = filtered.filter(f => f.skills.includes(skill));
+            }
+
+            if (rate) {
+                const [min, max] = rate.split('-').map(v => v === '+' ? Infinity : parseInt(v));
+                filtered = filtered.filter(f => f.hourlyRate >= min && (max === undefined || f.hourlyRate <= max));
+            }
+
+            if (rating) {
+                filtered = filtered.filter(f => f.rating >= parseInt(rating));
+            }
+
+            displayFreelancers(filtered);
+        }
+
+        async function showInterest(freelancerId) {
+            try {
+                if (!currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                if (currentUser.userType !== 'client') {
+                    alert('Only clients can show interest in freelancers.');
+                    return;
+                }
+
+                const res = await fetch('/api/interests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fromUserId: currentUser._id,
+                        toUserId: freelancerId
+                    })
+                });
+
+                const data = await res.json();
+                if (!data.success) {
+                    alert(data.error || 'Failed to show interest');
+                    return;
+                }
+
+                // Refresh interests and UI
+                const interestsRes = await fetch(`/api/interests/client/${currentUser._id}`);
+                const interestsData = await interestsRes.json();
+                if (interestsData.success) {
+                    clientInterests = interestsData.interests || [];
+                }
+                displayFreelancers(allFreelancers);
+            } catch (err) {
+                console.error('Error sending interest:', err);
+                alert('Failed to show interest');
+            }
+        }
+
+        document.getElementById('applyFilters').addEventListener('click', applyFilters);
+        document.addEventListener('DOMContentLoaded', loadFreelancers);
+    </script>
+</body>
+</html>

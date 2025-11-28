@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Freelancer Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">Freelancer<span>.</span></a>
+            <button class="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="messages.html">Messages</a></li>
+                <li><a href="notifications.html">Notifications</a></li>
+                <li><a href="#" onclick="logout()">Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section class="section messages-section">
+            <div class="messages-container">
+                <!-- Conversations List -->
+                <aside class="conversations-sidebar">
+                    <div class="conversations-header">
+                        <h2>Messages</h2>
+                        <input type="text" id="searchUsers" placeholder="Search @username or name..." class="search-input">
+                    </div>
+                    <div id="usersList" class="conversations-list">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </aside>
+
+                <!-- Chat Area -->
+                <div class="chat-main">
+                    <div id="chatContainer" class="chat-container">
+                        <div class="empty-chat">
+                            <p>Select a conversation to start messaging</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <button class="scroll-to-top" id="scrollToTop" aria-label="Scroll to top">↑</button>
+
+    <footer>
+        <div class="social-icons">
+            <a href="https://t.me/rundilundlegamera" target="_blank" rel="noopener noreferrer" aria-label="Telegram">
+                <svg viewBox="0 0 512 512" preserveAspectRatio="xMidYMid meet">
+                    <path d="M 200.894531 323.863281 L 192.425781 442.988281 C 204.542969 442.988281 209.792969 437.78125 216.085938 431.53125 L 272.894531 377.238281 L 390.613281 463.445312 C 412.203125 475.476562 427.414062 469.140625 433.238281 443.585938 L 510.507812 81.515625 L 510.527344 81.492188 C 517.375 49.578125 498.988281 37.097656 477.953125 44.929688 L 23.765625 218.816406 C -7.230469 230.847656 -6.761719 248.128906 18.496094 255.957031 L 134.613281 292.074219 L 404.332031 123.308594 C 417.023438 114.902344 428.566406 119.550781 419.070312 127.957031 Z M 200.894531 323.863281 "></path>
+                </svg>
+            </a>
+        </div>
+        <p>&copy; <span id="current-year"></span> Freelancer Marketplace. All rights reserved.</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        let currentUser = null;
+        let allUsers = [];
+        let selectedUserId = null;
+        let currentConversation = null;
+        let messagePolling = null;
+
+        async function loadUsers() {
+            try {
+                currentUser = JSON.parse(localStorage.getItem('user'));
+                if (!currentUser) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Load matched users only (Tinder-style)
+                const response = await fetch(`/api/matches/${currentUser._id}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    allUsers = data.users;
+                    displayUsers(allUsers);
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function displayUsers(users) {
+            const list = document.getElementById('usersList');
+            
+            if (users.length === 0) {
+                list.innerHTML = '<p style="color: #bbb; padding: 20px;">No matches yet. Start by showing interest in freelancers.</p>';
+                return;
+            }
+
+            list.innerHTML = users.map(user => {
+                const userType = user.userType === 'freelancer' ? '💼' : '🏢';
+                const title = user.userType === 'freelancer' ? (user.freelancerProfile?.title || 'Freelancer') : 'Client';
+                const username = user.username ? `@${user.username}` : '';
+                
+                return `
+                    <div class="conversation-item ${selectedUserId === user._id ? 'active' : ''}" onclick="selectUser('${user._id}', '${user.name}', '${username}')">
+                        <div class="conversation-header">
+                            <h4>${userType} ${user.name}</h4>
+                            ${username ? `<span class="username-badge">${username}</span>` : ''}
+                        </div>
+                        <p class="conversation-preview">${title}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function selectUser(userId, userName, username) {
+            selectedUserId = userId;
+            
+            // Update active state
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.conversation-item').classList.add('active');
+
+            await loadChat(userId, userName, username);
+        }
+
+        async function loadChat(userId, userName, username) {
+            try {
+                const response = await fetch(`/api/conversations/${currentUser._id}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    currentConversation = data.conversations.find(conv => 
+                        conv.participants.some(p => p.toString() === userId)
+                    );
+
+                    displayChat(userId, userName, username, currentConversation);
+                    startMessagePolling(userId, userName, username);
+                }
+            } catch (error) {
+                console.error('Error loading chat:', error);
+            }
+        }
+
+        function displayChat(userId, userName, username, conversation) {
+            const messages = conversation ? conversation.messages : [];
+            
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = `
+                <div class="chat-header">
+                    <div>
+                        <h3>${userName}</h3>
+                        ${username ? `<p class="chat-username">${username}</p>` : ''}
+                    </div>
+                    <p class="chat-status">💚 Online</p>
+                </div>
+                <div class="messages-list" id="messagesList">
+                    ${messages.length === 0 ? '<p style="text-align: center; color: #999; padding: 40px;">No messages yet. Start the conversation!</p>' : ''}
+                    ${messages.map(msg => `
+                        <div class="message ${msg.senderId.toString() === currentUser._id.toString() ? 'sent' : 'received'}">
+                            <p>${msg.text}</p>
+                            <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="message-input-area">
+                    <input type="text" id="messageInput" placeholder="Type a message..." class="message-input" onkeypress="if(event.key === 'Enter') sendMessage()">
+                    <button onclick="sendMessage()" class="btn-send">📤</button>
+                </div>
+            `;
+
+            scrollToBottom();
+            document.getElementById('messageInput').focus();
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (messagePolling) clearInterval(messagePolling);
+        });
+
+        function formatMessageTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            }
+            
+            if (diff < 604800000) {
+                return date.toLocaleDateString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+            }
+            
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                const messagesList = document.getElementById('messagesList');
+                if (messagesList) {
+                    messagesList.scrollTop = messagesList.scrollHeight;
+                }
+            }, 100);
+        }
+
+        function startMessagePolling(userId, userName, username) {
+            if (messagePolling) clearInterval(messagePolling);
+            
+            messagePolling = setInterval(async () => {
+                if (selectedUserId) {
+                    const response = await fetch(`/api/conversations/${currentUser._id}`);
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const conversation = data.conversations.find(conv => 
+                            conv.participants.some(p => p.toString() === selectedUserId)
+                        );
+                        
+                        if (conversation && JSON.stringify(conversation.messages) !== JSON.stringify(currentConversation?.messages)) {
+                            currentConversation = conversation;
+                            updateMessages(conversation);
+                        }
+                    }
+                }
+            }, 2000);
+        }
+
+        function updateMessages(conversation) {
+            const messagesList = document.getElementById('messagesList');
+            if (!messagesList) return;
+
+            const wasAtBottom = messagesList.scrollHeight - messagesList.scrollTop <= messagesList.clientHeight + 50;
+
+            messagesList.innerHTML = conversation.messages.map(msg => `
+                <div class="message ${msg.senderId.toString() === currentUser._id.toString() ? 'sent' : 'received'}">
+                    <p>${msg.text}</p>
+                    <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
+                </div>
+            `).join('');
+
+            if (wasAtBottom) {
+                scrollToBottom();
+            }
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const text = messageInput.value.trim();
+
+            if (!text || !selectedUserId) return;
+
+            try {
+                const response = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        senderId: currentUser._id,
+                        receiverId: selectedUserId,
+                        text: text
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    messageInput.value = '';
+                    const user = allUsers.find(u => u._id === selectedUserId);
+                    await loadChat(selectedUserId, user?.name, user?.username ? `@${user.username}` : '');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+            }
+        }
+
+        // Search now only filters within matched users, not the entire user base
+        let searchTimeout;
+        document.getElementById('searchUsers').addEventListener('input', (e) => {
+            const query = e.target.value.trim().toLowerCase();
+            
+            if (searchTimeout) clearTimeout(searchTimeout);
+            
+            searchTimeout = setTimeout(() => {
+                if (query.length === 0) {
+                    displayUsers(allUsers);
+                    return;
+                }
+
+                const filtered = allUsers.filter(user => {
+                    const nameMatch = user.name && user.name.toLowerCase().includes(query);
+                    const usernameMatch = user.username && user.username.toLowerCase().includes(
+                        query.startsWith('@') ? query.substring(1) : query
+                    );
+                    return nameMatch || usernameMatch;
+                });
+
+                displayUsers(filtered);
+            }, 300);
+        });
+
+        document.addEventListener('DOMContentLoaded', loadUsers);
+    </script>
+</body>
+</html>
