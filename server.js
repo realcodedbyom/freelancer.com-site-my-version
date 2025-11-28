@@ -6,8 +6,16 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const uri = "mongodb+srv://om3479781:omkumar@freelance.duui2y.mongodb.net/?appName=freelance";
-const client = new MongoClient(uri);
+// MongoDB connection string is taken from environment variables
+// Set MONGODB_URI in your deployment / local env.
+const mongoUri = process.env.MONGODB_URI;
+
+if (!mongoUri) {
+  console.error('Missing MONGODB_URI environment variable. Set it before starting the server.');
+  process.exit(1);
+}
+
+const client = new MongoClient(mongoUri);
 
 let db;
 
@@ -15,7 +23,8 @@ let db;
 async function connectDB() {
   try {
     await client.connect();
-    db = client.db('freelance');
+    // Use the default database from the MongoDB URI
+    db = client.db();
     console.log('Connected to MongoDB');
   } catch (error) {
     console.error('MongoDB connection error:', error);
